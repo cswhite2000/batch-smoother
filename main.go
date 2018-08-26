@@ -49,8 +49,6 @@ func main() {
 		numRoutines = numCPU
 	}
 
-	fmt.Printf("%d %d", numRoutines, numCPU)
-
 	for i := 0; i < numRoutines; i++ {
 		wg.Add(1)
 		go handleFiles(&wg)
