@@ -18,6 +18,13 @@ var length int
 var finished = 0
 var files chan string
 
+type Pixel struct {
+	red float64
+	green float64
+	blue float64
+	alpha float64
+}
+
 func main() {
 
 	paths := getPhotoFiles()
@@ -65,51 +72,542 @@ func initDistance() {
 }
 
 func smoothPhoto(photo image.Image) image.Image {
-
-	drawableImage := image.NewRGBA(photo.Bounds())
-
 	bounds := photo.Bounds()
 
-	for imageX := 0; imageX < bounds.Max.X; imageX++ {
-		for imageY := 0; imageY < bounds.Max.Y; imageY++ {
+	maxX := bounds.Max.X
+	maxY := bounds.Max.Y
 
-			r, g, b, a := colorToDoubles(photo.At(imageX, imageY))
-			rOriginal, gOriginal, bOriginal, aOriginal := colorToDoubles(photo.At(imageX, imageY))
+	if maxX <= 1000 && maxY <= 1000 {
 
-			total := 1.0
+		var sourceImage [1000][1000]Pixel
 
-			for offsetX := -5; offsetX < 6; offsetX++ {
-				for offsetY := -5; offsetY < 6; offsetY++ {
+		var destinationImage [1000][1000]Pixel
 
-					x := imageX + offsetX
-					y := imageY + offsetY
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				rOriginal, gOriginal, bOriginal, aOriginal := colorToDoubles(photo.At(imageX, imageY))
+				sourceImage[imageX][imageY].red = rOriginal
+				sourceImage[imageX][imageY].green = gOriginal
+				sourceImage[imageX][imageY].blue = bOriginal
+				sourceImage[imageX][imageY].alpha = aOriginal
+			}
+		}
 
-					if x >= 0 && x < bounds.Max.X && y >= 0 && y < bounds.Max.Y {
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				pixel := sourceImage[imageX][imageY]
+				originalPixel := sourceImage[imageX][imageY]
 
-						rNew, gNew, bNew, aNew := colorToDoubles(photo.At(x, y))
+				total := 1.0
 
-						if (math.Abs(rOriginal-rNew)+math.Abs(gOriginal-gNew)+math.Abs(bOriginal-bNew)+math.Abs(aOriginal-aNew))/4.0 < 15 {
+				for offsetX := -5; offsetX < 6; offsetX++ {
+					for offsetY := -5; offsetY < 6; offsetY++ {
 
-							distance := distanceMatrix[offsetX+5][offsetY+5]
+						x := imageX + offsetX
+						y := imageY + offsetY
 
-							total += distance
+						if x >= 0 && x < maxX && y >= 0 && y < maxY {
 
-							r += rNew * distance
-							g += gNew * distance
-							b += bNew * distance
-							a += aNew * distance
+							newPixel := sourceImage[x][y]
+
+							rPart := originalPixel.red - newPixel.red
+							if rPart < 0 {
+								rPart = -rPart
+							}
+
+							gPart := originalPixel.green - newPixel.green
+							if gPart < 0 {
+								gPart = -gPart
+							}
+
+							bPart := originalPixel.blue - newPixel.blue
+							if bPart < 0 {
+								bPart = -bPart
+							}
+
+							aPart := originalPixel.alpha - newPixel.alpha
+							if aPart < 0 {
+								aPart = -aPart
+							}
+
+							if (rPart + gPart + bPart + aPart) < 60 {
+								distance := distanceMatrix[offsetX+5][offsetY+5]
+
+								total += distance
+
+								pixel.red += newPixel.red * distance
+								pixel.green += newPixel.green * distance
+								pixel.blue += newPixel.blue * distance
+								pixel.alpha += newPixel.alpha * distance
+							}
 						}
 					}
 				}
+
+				pixel.red /= total
+				pixel.green /= total
+				pixel.blue /= total
+				pixel.alpha /= total
+
+				destinationImage[imageX][imageY] = pixel
 			}
-
-			drawableImage.Set(imageX, imageY,
-				color.RGBA{uint8(r / total), uint8(g / total), uint8(b / total), uint8(a / total)})
-
 		}
-	}
 
-	return drawableImage
+		drawableImage := image.NewRGBA(photo.Bounds())
+
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				pixel := destinationImage[imageX][imageY]
+
+				drawableImage.Set(imageX, imageY,
+					color.RGBA{uint8(pixel.red), uint8(pixel.green), uint8(pixel.blue), uint8(pixel.alpha)})
+			}
+		}
+
+		return drawableImage
+	} else if maxX <= 2000 && maxY <= 2000 {
+
+		var sourceImage [2000][2000]Pixel
+
+		var destinationImage [2000][2000]Pixel
+
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				rOriginal, gOriginal, bOriginal, aOriginal := colorToDoubles(photo.At(imageX, imageY))
+				sourceImage[imageX][imageY].red = rOriginal
+				sourceImage[imageX][imageY].green = gOriginal
+				sourceImage[imageX][imageY].blue = bOriginal
+				sourceImage[imageX][imageY].alpha = aOriginal
+			}
+		}
+
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				pixel := sourceImage[imageX][imageY]
+				originalPixel := sourceImage[imageX][imageY]
+
+				total := 1.0
+
+				for offsetX := -5; offsetX < 6; offsetX++ {
+					for offsetY := -5; offsetY < 6; offsetY++ {
+
+						x := imageX + offsetX
+						y := imageY + offsetY
+
+						if x >= 0 && x < maxX && y >= 0 && y < maxY {
+
+							newPixel := sourceImage[x][y]
+
+							rPart := originalPixel.red - newPixel.red
+							if rPart < 0 {
+								rPart = -rPart
+							}
+
+							gPart := originalPixel.green - newPixel.green
+							if gPart < 0 {
+								gPart = -gPart
+							}
+
+							bPart := originalPixel.blue - newPixel.blue
+							if bPart < 0 {
+								bPart = -bPart
+							}
+
+							aPart := originalPixel.alpha - newPixel.alpha
+							if aPart < 0 {
+								aPart = -aPart
+							}
+
+							if (rPart + gPart + bPart + aPart) < 60 {
+								distance := distanceMatrix[offsetX+5][offsetY+5]
+
+								total += distance
+
+								pixel.red += newPixel.red * distance
+								pixel.green += newPixel.green * distance
+								pixel.blue += newPixel.blue * distance
+								pixel.alpha += newPixel.alpha * distance
+							}
+						}
+					}
+				}
+
+				pixel.red /= total
+				pixel.green /= total
+				pixel.blue /= total
+				pixel.alpha /= total
+
+				destinationImage[imageX][imageY] = pixel
+			}
+		}
+
+		drawableImage := image.NewRGBA(photo.Bounds())
+
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				pixel := destinationImage[imageX][imageY]
+
+				drawableImage.Set(imageX, imageY,
+					color.RGBA{uint8(pixel.red), uint8(pixel.green), uint8(pixel.blue), uint8(pixel.alpha)})
+			}
+		}
+
+		return drawableImage
+	} else if maxX <= 4000 && maxY <= 4000 {
+
+		var sourceImage [4000][4000]Pixel
+
+		var destinationImage [4000][4000]Pixel
+
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				rOriginal, gOriginal, bOriginal, aOriginal := colorToDoubles(photo.At(imageX, imageY))
+				sourceImage[imageX][imageY].red = rOriginal
+				sourceImage[imageX][imageY].green = gOriginal
+				sourceImage[imageX][imageY].blue = bOriginal
+				sourceImage[imageX][imageY].alpha = aOriginal
+			}
+		}
+
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				pixel := sourceImage[imageX][imageY]
+				originalPixel := sourceImage[imageX][imageY]
+
+				total := 1.0
+
+				for offsetX := -5; offsetX < 6; offsetX++ {
+					for offsetY := -5; offsetY < 6; offsetY++ {
+
+						x := imageX + offsetX
+						y := imageY + offsetY
+
+						if x >= 0 && x < maxX && y >= 0 && y < maxY {
+
+							newPixel := sourceImage[x][y]
+
+							rPart := originalPixel.red - newPixel.red
+							if rPart < 0 {
+								rPart = -rPart
+							}
+
+							gPart := originalPixel.green - newPixel.green
+							if gPart < 0 {
+								gPart = -gPart
+							}
+
+							bPart := originalPixel.blue - newPixel.blue
+							if bPart < 0 {
+								bPart = -bPart
+							}
+
+							aPart := originalPixel.alpha - newPixel.alpha
+							if aPart < 0 {
+								aPart = -aPart
+							}
+
+							if (rPart + gPart + bPart + aPart) < 60 {
+								distance := distanceMatrix[offsetX+5][offsetY+5]
+
+								total += distance
+
+								pixel.red += newPixel.red * distance
+								pixel.green += newPixel.green * distance
+								pixel.blue += newPixel.blue * distance
+								pixel.alpha += newPixel.alpha * distance
+							}
+						}
+					}
+				}
+
+				pixel.red /= total
+				pixel.green /= total
+				pixel.blue /= total
+				pixel.alpha /= total
+
+				destinationImage[imageX][imageY] = pixel
+			}
+		}
+
+		drawableImage := image.NewRGBA(photo.Bounds())
+
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				pixel := destinationImage[imageX][imageY]
+
+				drawableImage.Set(imageX, imageY,
+					color.RGBA{uint8(pixel.red), uint8(pixel.green), uint8(pixel.blue), uint8(pixel.alpha)})
+			}
+		}
+
+		return drawableImage
+	} else if maxX <= 10000 && maxY <= 10000 {
+
+		var sourceImage [10000][10000]Pixel
+
+		var destinationImage [10000][10000]Pixel
+
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				rOriginal, gOriginal, bOriginal, aOriginal := colorToDoubles(photo.At(imageX, imageY))
+				sourceImage[imageX][imageY].red = rOriginal
+				sourceImage[imageX][imageY].green = gOriginal
+				sourceImage[imageX][imageY].blue = bOriginal
+				sourceImage[imageX][imageY].alpha = aOriginal
+			}
+		}
+
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				pixel := sourceImage[imageX][imageY]
+				originalPixel := sourceImage[imageX][imageY]
+
+				total := 1.0
+
+				for offsetX := -5; offsetX < 6; offsetX++ {
+					for offsetY := -5; offsetY < 6; offsetY++ {
+
+						x := imageX + offsetX
+						y := imageY + offsetY
+
+						if x >= 0 && x < maxX && y >= 0 && y < maxY {
+
+							newPixel := sourceImage[x][y]
+
+							rPart := originalPixel.red - newPixel.red
+							if rPart < 0 {
+								rPart = -rPart
+							}
+
+							gPart := originalPixel.green - newPixel.green
+							if gPart < 0 {
+								gPart = -gPart
+							}
+
+							bPart := originalPixel.blue - newPixel.blue
+							if bPart < 0 {
+								bPart = -bPart
+							}
+
+							aPart := originalPixel.alpha - newPixel.alpha
+							if aPart < 0 {
+								aPart = -aPart
+							}
+
+							if (rPart + gPart + bPart + aPart) < 60 {
+								distance := distanceMatrix[offsetX+5][offsetY+5]
+
+								total += distance
+
+								pixel.red += newPixel.red * distance
+								pixel.green += newPixel.green * distance
+								pixel.blue += newPixel.blue * distance
+								pixel.alpha += newPixel.alpha * distance
+							}
+						}
+					}
+				}
+
+				pixel.red /= total
+				pixel.green /= total
+				pixel.blue /= total
+				pixel.alpha /= total
+
+				destinationImage[imageX][imageY] = pixel
+			}
+		}
+
+		drawableImage := image.NewRGBA(photo.Bounds())
+
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				pixel := destinationImage[imageX][imageY]
+
+				drawableImage.Set(imageX, imageY,
+					color.RGBA{uint8(pixel.red), uint8(pixel.green), uint8(pixel.blue), uint8(pixel.alpha)})
+			}
+		}
+
+		return drawableImage
+	} else if maxX <= 20000 && maxY <= 20000 {
+
+		var sourceImage [20000][20000]Pixel
+
+		var destinationImage [20000][20000]Pixel
+
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				rOriginal, gOriginal, bOriginal, aOriginal := colorToDoubles(photo.At(imageX, imageY))
+				sourceImage[imageX][imageY].red = rOriginal
+				sourceImage[imageX][imageY].green = gOriginal
+				sourceImage[imageX][imageY].blue = bOriginal
+				sourceImage[imageX][imageY].alpha = aOriginal
+			}
+		}
+
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				pixel := sourceImage[imageX][imageY]
+				originalPixel := sourceImage[imageX][imageY]
+
+				total := 1.0
+
+				for offsetX := -5; offsetX < 6; offsetX++ {
+					for offsetY := -5; offsetY < 6; offsetY++ {
+
+						x := imageX + offsetX
+						y := imageY + offsetY
+
+						if x >= 0 && x < maxX && y >= 0 && y < maxY {
+
+							newPixel := sourceImage[x][y]
+
+							rPart := originalPixel.red - newPixel.red
+							if rPart < 0 {
+								rPart = -rPart
+							}
+
+							gPart := originalPixel.green - newPixel.green
+							if gPart < 0 {
+								gPart = -gPart
+							}
+
+							bPart := originalPixel.blue - newPixel.blue
+							if bPart < 0 {
+								bPart = -bPart
+							}
+
+							aPart := originalPixel.alpha - newPixel.alpha
+							if aPart < 0 {
+								aPart = -aPart
+							}
+
+							if (rPart + gPart + bPart + aPart) < 60 {
+								distance := distanceMatrix[offsetX+5][offsetY+5]
+
+								total += distance
+
+								pixel.red += newPixel.red * distance
+								pixel.green += newPixel.green * distance
+								pixel.blue += newPixel.blue * distance
+								pixel.alpha += newPixel.alpha * distance
+							}
+						}
+					}
+				}
+
+				pixel.red /= total
+				pixel.green /= total
+				pixel.blue /= total
+				pixel.alpha /= total
+
+				destinationImage[imageX][imageY] = pixel
+			}
+		}
+
+		drawableImage := image.NewRGBA(photo.Bounds())
+
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				pixel := destinationImage[imageX][imageY]
+
+				drawableImage.Set(imageX, imageY,
+					color.RGBA{uint8(pixel.red), uint8(pixel.green), uint8(pixel.blue), uint8(pixel.alpha)})
+			}
+		}
+
+		return drawableImage
+	} else {
+
+		//This image is too damn big
+
+		var sourceImage [100000][100000]Pixel
+
+		var destinationImage [100000][100000]Pixel
+
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				rOriginal, gOriginal, bOriginal, aOriginal := colorToDoubles(photo.At(imageX, imageY))
+				sourceImage[imageX][imageY].red = rOriginal
+				sourceImage[imageX][imageY].green = gOriginal
+				sourceImage[imageX][imageY].blue = bOriginal
+				sourceImage[imageX][imageY].alpha = aOriginal
+			}
+		}
+
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				pixel := sourceImage[imageX][imageY]
+				originalPixel := sourceImage[imageX][imageY]
+
+				total := 1.0
+
+				for offsetX := -5; offsetX < 6; offsetX++ {
+					for offsetY := -5; offsetY < 6; offsetY++ {
+
+						x := imageX + offsetX
+						y := imageY + offsetY
+
+						if x >= 0 && x < maxX && y >= 0 && y < maxY {
+
+							newPixel := sourceImage[x][y]
+
+							rPart := originalPixel.red - newPixel.red
+							if rPart < 0 {
+								rPart = -rPart
+							}
+
+							gPart := originalPixel.green - newPixel.green
+							if gPart < 0 {
+								gPart = -gPart
+							}
+
+							bPart := originalPixel.blue - newPixel.blue
+							if bPart < 0 {
+								bPart = -bPart
+							}
+
+							aPart := originalPixel.alpha - newPixel.alpha
+							if aPart < 0 {
+								aPart = -aPart
+							}
+
+							if (rPart + gPart + bPart + aPart) < 60 {
+								distance := distanceMatrix[offsetX+5][offsetY+5]
+
+								total += distance
+
+								pixel.red += newPixel.red * distance
+								pixel.green += newPixel.green * distance
+								pixel.blue += newPixel.blue * distance
+								pixel.alpha += newPixel.alpha * distance
+							}
+						}
+					}
+				}
+
+				pixel.red /= total
+				pixel.green /= total
+				pixel.blue /= total
+				pixel.alpha /= total
+
+				destinationImage[imageX][imageY] = pixel
+			}
+		}
+
+		drawableImage := image.NewRGBA(photo.Bounds())
+
+		for imageX := 0; imageX < maxX; imageX++ {
+			for imageY := 0; imageY < maxY; imageY++ {
+				pixel := destinationImage[imageX][imageY]
+
+				drawableImage.Set(imageX, imageY,
+					color.RGBA{uint8(pixel.red), uint8(pixel.green), uint8(pixel.blue), uint8(pixel.alpha)})
+			}
+		}
+
+		return drawableImage
+	}
 }
 
 func colorToDoubles(color color.Color) (r float64, g float64, b float64, a float64) {
